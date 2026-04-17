@@ -8,7 +8,7 @@ info:
     Supports single validation and batch processing of up to 100 IBANs.
 
 servers:
-  - url: https://iban-validator.vercel.app/api/v1
+  - url: https://iban-validator-one.vercel.app/api/v1
     description: Production
 
 paths:
