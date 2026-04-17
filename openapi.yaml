@@ -1,0 +1,311 @@
+openapi: 3.0.0
+info:
+  title: IBAN Validator Pro
+  version: "1.0.0"
+  description: >
+    Validate IBANs and get structured bank details — BIC, bank name, country,
+    currency, and parsed account components — in a single API call.
+    Supports single validation and batch processing of up to 100 IBANs.
+
+servers:
+  - url: https://iban-validator.vercel.app/api/v1
+    description: Production
+
+paths:
+  /validate:
+    post:
+      summary: Validate a single IBAN
+      description: >
+        Validates an IBAN using ISO 13616 checksum (MOD-97) and returns
+        structured bank details including BIC, bank name, and parsed account components.
+        Input is automatically normalized (spaces removed, uppercased).
+      operationId: validateIban
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - iban
+              properties:
+                iban:
+                  type: string
+                  description: IBAN to validate (spaces and dashes are ignored)
+                  example: "DE89 3704 0044 0532 0130 00"
+      responses:
+        "200":
+          description: Validation result (valid or invalid)
+          headers:
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+              description: Remaining requests in current window
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/ValidIbanResponse"
+                  - $ref: "#/components/schemas/InvalidIbanResponse"
+              examples:
+                valid:
+                  summary: Valid IBAN
+                  value:
+                    valid: true
+                    iban: "DE89370400440532013000"
+                    formatted: "DE89 3704 0044 0532 0130 00"
+                    country: "DE"
+                    country_name: "Germany"
+                    currency: "EUR"
+                    bank_code: "37040044"
+                    account_number: "0532013000"
+                    bic: "COBADEFFXXX"
+                    bank_name: "Commerzbank"
+                invalid:
+                  summary: Invalid IBAN
+                  value:
+                    valid: false
+                    iban: "DE00000000000000000000"
+                    error_code: "INVALID_CHECKSUM"
+                    error: "IBAN checksum validation failed"
+        "400":
+          description: Bad request — missing or malformed input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Missing required field: iban"
+                code: "MISSING_FIELD"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Rate limit exceeded"
+                code: "RATE_LIMITED"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /validate/batch:
+    post:
+      summary: Validate up to 100 IBANs at once
+      description: >
+        Validates a batch of IBANs in a single request.
+        Returns an array of results in the same order as the input.
+        Batch size limit depends on your subscription tier (Basic: 10, Pro/Business: 100).
+      operationId: validateIbanBatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ibans
+              properties:
+                ibans:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+                  maxItems: 100
+                  description: List of IBANs to validate
+                  example:
+                    - "DE89 3704 0044 0532 0130 00"
+                    - "GB82WEST12345698765432"
+                    - "INVALID_IBAN"
+      responses:
+        "200":
+          description: Batch validation results
+          headers:
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      oneOf:
+                        - $ref: "#/components/schemas/ValidIbanResponse"
+                        - $ref: "#/components/schemas/InvalidIbanResponse"
+                  total:
+                    type: integer
+                    description: Total number of IBANs processed
+                  valid_count:
+                    type: integer
+                    description: Number of valid IBANs
+                  invalid_count:
+                    type: integer
+                    description: Number of invalid IBANs
+              example:
+                results:
+                  - valid: true
+                    iban: "DE89370400440532013000"
+                    formatted: "DE89 3704 0044 0532 0130 00"
+                    country: "DE"
+                    country_name: "Germany"
+                    currency: "EUR"
+                    bank_code: "37040044"
+                    account_number: "0532013000"
+                    bic: "COBADEFFXXX"
+                    bank_name: "Commerzbank"
+                  - valid: true
+                    iban: "GB82WEST12345698765432"
+                    formatted: "GB82 WEST 1234 5698 7654 32"
+                    country: "GB"
+                    country_name: "United Kingdom"
+                    currency: "GBP"
+                    bank_code: "WEST"
+                    account_number: "12345698765432"
+                    bic: null
+                    bank_name: null
+                  - valid: false
+                    iban: "INVALID_IBAN"
+                    error_code: "INVALID_FORMAT"
+                    error: "Input does not match IBAN format"
+                total: 3
+                valid_count: 2
+                invalid_count: 1
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Batch size exceeds tier limit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Batch size 50 exceeds your plan limit of 10. Upgrade to Pro for batches up to 100."
+                code: "BATCH_LIMIT_EXCEEDED"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /health:
+    get:
+      summary: Health check
+      operationId: healthCheck
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  timestamp:
+                    type: string
+                    format: date-time
+
+components:
+  schemas:
+    ValidIbanResponse:
+      type: object
+      properties:
+        valid:
+          type: boolean
+          example: true
+        iban:
+          type: string
+          description: Normalized IBAN (no spaces)
+          example: "DE89370400440532013000"
+        formatted:
+          type: string
+          description: IBAN with standard 4-character grouping
+          example: "DE89 3704 0044 0532 0130 00"
+        country:
+          type: string
+          description: ISO 3166-1 alpha-2 country code
+          example: "DE"
+        country_name:
+          type: string
+          example: "Germany"
+        currency:
+          type: string
+          description: ISO 4217 currency code
+          example: "EUR"
+        bank_code:
+          type: string
+          description: Bank identifier portion of the IBAN
+          example: "37040044"
+        account_number:
+          type: string
+          description: Account number portion of the IBAN
+          example: "0532013000"
+        bic:
+          type: string
+          nullable: true
+          description: BIC/SWIFT code of the bank (null if not in registry)
+          example: "COBADEFFXXX"
+        bank_name:
+          type: string
+          nullable: true
+          description: Name of the bank (null if not in registry)
+          example: "Commerzbank"
+
+    InvalidIbanResponse:
+      type: object
+      properties:
+        valid:
+          type: boolean
+          example: false
+        iban:
+          type: string
+          description: Normalized input as provided
+          example: "DE00000000000000000000"
+        error_code:
+          type: string
+          enum:
+            - INVALID_FORMAT
+            - INVALID_CHECKSUM
+            - UNSUPPORTED_COUNTRY
+            - TOO_SHORT
+            - TOO_LONG
+          example: "INVALID_CHECKSUM"
+        error:
+          type: string
+          description: Human-readable error message
+          example: "IBAN checksum validation failed"
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - code
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+        code:
+          type: string
+          description: Machine-readable error code
+        details:
+          type: object
+          description: Optional additional error details
