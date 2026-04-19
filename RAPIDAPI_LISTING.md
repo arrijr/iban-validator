@@ -13,8 +13,8 @@ Copy-paste ready. Paste into RapidAPI Studio → General / Settings / Documentat
 | **Base URL** | `https://iban-validator-one.vercel.app/api/v1` |
 | **Health Check URL** | `https://iban-validator-one.vercel.app/api/health` |
 | **RapidAPI Host** | `iban-validator-one.p.rapidapi.com` |
-| **Privacy URL** | `https://raw.githubusercontent.com/arrijr/iban-validator/main/PRIVACY.md` |
-| **Terms URL** | `https://raw.githubusercontent.com/arrijr/iban-validator/main/TERMS.md` |
+| **Privacy URL** | `https://raw.githubusercontent.com/arrijr/iban-validator/master/PRIVACY.md` |
+| **Terms URL** | `https://raw.githubusercontent.com/arrijr/iban-validator/master/TERMS.md` |
 
 ## Secret Headers & Parameters (Studio → Security)
 
