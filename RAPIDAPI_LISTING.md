@@ -1,33 +1,43 @@
 # RapidAPI Listing — IBAN Validator Pro
 
-Copy-paste ready. Fields map 1:1 to RapidAPI Studio → General / Settings / Documentation.
+Copy-paste ready. Paste into RapidAPI Studio → General / Settings / Documentation / Security / Tests.
 
 ---
 
-## NAME
+## Core fields (Studio → Settings)
+
+| Field | Value |
+|---|---|
+| **API Name** | `IBAN Validator Pro` |
+| **Category** | `Business Software` (secondary: `Finance`, `Data`) |
+| **Base URL** | `https://iban-validator-one.vercel.app/api/v1` |
+| **Health Check URL** | `https://iban-validator-one.vercel.app/api/health` |
+| **RapidAPI Host** | `iban-validator-one.p.rapidapi.com` |
+| **Privacy URL** | `https://raw.githubusercontent.com/arrijr/iban-validator/main/PRIVACY.md` |
+| **Terms URL** | `https://raw.githubusercontent.com/arrijr/iban-validator/main/TERMS.md` |
+
+## Secret Headers & Parameters (Studio → Security)
+
+Add ONE row in the **Secret Headers & Parameters** table (NOT Transformations):
+
+| Name | Value | Type |
+|---|---|---|
+| `X-RapidAPI-Proxy-Secret` | `ba727b80-3a22-11f1-ba56-933436aaa55d` | `Header` |
+
+⚠️ Do NOT paste this into **Transformations** — that dialog needs a `request.header.name` dotted path and rejects plain header names with "Invalid format".
+
+---
+
+## TAGLINE (≤60 chars)
+
 ```
-IBAN Validator Pro
+Validate IBANs + get BIC, bank name & parsed account
 ```
 
-## CATEGORY
-```
-Finance
-```
-(Secondary: Data / Business Software)
+## SHORT DESCRIPTION (≤160 chars)
 
-## TAGLINE (46/60 chars)
 ```
-Validate IBANs & get bank details in one call
-```
-
-## SHORT DESCRIPTION (appears under API name in search)
-```
-Validate IBANs from ~80 countries with structured bank details — country, currency, bank code, and parsed account number — in a single API call. Batch up to 100 IBANs per request. Pure MOD-97 checksum validation, no external dependencies, sub-50ms response times.
-```
-
-## TAGS (10)
-```
-iban, iban-validation, iban-checker, bank-account, banking, finance, swift, fintech, payments, accounting
+IBAN validation (ISO 13616) plus BIC, bank name, country, currency & parsed account components. Single + batch (up to 100). Sub-50ms responses.
 ```
 
 ---
@@ -35,54 +45,43 @@ iban, iban-validation, iban-checker, bank-account, banking, finance, swift, fint
 ## LONG DESCRIPTION
 
 ```markdown
-## What is IBAN Validator Pro?
+# IBAN Validator Pro — Validate IBANs and Enrich with BIC + Bank Name
 
-**IBAN Validator Pro** validates International Bank Account Numbers (IBANs) against the ISO 13616 standard and returns **structured bank details** — country, currency, bank code, and parsed account number — in a single response. Covers ~80 countries in the official IBAN registry.
+Production-ready REST API for validating **International Bank Account Numbers (IBAN)** against the ISO 13616 checksum (MOD-97) and enriching them with **BIC/SWIFT**, **bank name**, **country**, **currency**, and **parsed account components** — bank code, branch code, account number — in a single call.
 
-Unlike plain "valid / invalid" checkers, this API parses the IBAN into its structural components so you can use them directly in your invoicing, payments, or onboarding flows. Input is automatically normalized (spaces, dashes, lowercase — all handled).
+Built for **payment processors, accounting software, marketplaces, subscription billing, and KYC pipelines** that need more than a simple boolean.
 
-Built for B2B applications that need to validate bank accounts on-the-fly: invoicing tools, payroll systems, onboarding forms, and anywhere you accept a customer's bank details.
+## Why developers choose this API
 
-## Use Cases
+- ✅ **Validation + enrichment in one call** — no chaining two APIs
+- ✅ **70+ IBAN-supporting countries** — full SEPA coverage plus Middle East, North Africa, and the Caribbean
+- ✅ **BIC + bank name lookup** — registry-backed, returns `null` honestly when unknown instead of guessing
+- ✅ **Parsed components** — bank code, branch code, account number already split out
+- ✅ **Batch endpoint** — validate up to 100 IBANs in one request (tier-limited)
+- ✅ **Deterministic error codes** — `INVALID_FORMAT`, `INVALID_CHECKSUM`, `UNSUPPORTED_COUNTRY`, `TOO_SHORT`, `TOO_LONG` — build real UX feedback
+- ✅ **Sub-50ms p95** — in-memory checksum + Redis-cached bank registry on Vercel Edge (fra1)
 
-- **Invoicing & Accounting Software** — Validate a customer's IBAN at entry time. Auto-extract country and bank code. Reject malformed inputs before they hit your payment provider.
-- **B2B Onboarding Forms** — Instant inline feedback on IBAN validity. Catch typos before they become support tickets.
-- **Payroll & HR Tools** — Bulk-validate employee bank details when importing from spreadsheets. Batch up to 100 IBANs per request.
-- **Payment Reconciliation** — Verify IBANs in bulk when importing bank statements or SEPA files.
-- **Fintech & Banking Apps** — Pre-flight check before initiating a SEPA transfer to avoid rejected payments and failed-transaction fees.
+## Common use cases
 
-## Why IBAN Validator Pro?
+- **Payment processors** — pre-validate IBANs at payment-method entry before hitting the rail
+- **Accounting & ERP** — enrich vendor/customer records with BIC automatically
+- **Subscription billing** — fail IBAN errors at checkout, not at the direct-debit mandate
+- **Marketplace payouts** — verify seller IBANs before wiring funds
+- **KYC & onboarding** — structured IBAN parsing for compliance forms
+- **SEPA direct debit (SDD)** — validate mandate IBANs before submission to the bank
 
-- ✅ **Structured response** — `country`, `country_name`, `currency`, `bank_code`, `account_number`, `formatted` — not just a boolean
-- ✅ **~80 countries supported** — Full ISO 13616 registry coverage out of the box
-- ✅ **Specific error codes** — `INVALID_FORMAT`, `INVALID_CHECKSUM`, `UNSUPPORTED_COUNTRY`, `TOO_SHORT`, `TOO_LONG` so you can show helpful messages
-- ✅ **Input normalization** — Spaces, dashes, lowercase all handled automatically
-- ✅ **Batch endpoint** — Validate up to 100 IBANs per request, results in input order
-- ✅ **Sub-50ms response time** — Pure checksum math, no external API calls, no rate-limit cascades
-- ✅ **No data leaks** — IBANs are never logged or stored. Stateless validation.
+## Endpoints
 
-## Getting Started
+### POST /validate
+Validate one IBAN. Body: `{ "iban": "DE89 3704 0044 0532 0130 00" }`. Spaces and dashes are ignored. Returns the normalized IBAN, formatted IBAN (4-char groups), country + currency, parsed bank/account components, and BIC + bank name when available.
 
-1. Subscribe to a plan (Free tier: 100 requests/month)
-2. Copy your RapidAPI key
-3. POST your first IBAN:
+### POST /validate/batch
+Validate up to 100 IBANs in one call. Body: `{ "ibans": ["DE89...", "GB82...", ...] }`. Returns per-IBAN results plus aggregate counts. Batch size limit depends on plan (BASIC: 10, PRO+: 100).
 
-```javascript
-const response = await fetch('https://iban-validator-pro.p.rapidapi.com/api/v1/validate', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'X-RapidAPI-Key': 'YOUR_RAPIDAPI_KEY',
-    'X-RapidAPI-Host': 'iban-validator-pro.p.rapidapi.com'
-  },
-  body: JSON.stringify({ iban: 'DE89 3704 0044 0532 0130 00' })
-});
+### GET /health
+Unguarded health check. Returns `{ status: "ok", timestamp: ... }`.
 
-const data = await response.json();
-console.log(data);
-```
-
-## Response Format (Valid IBAN)
+## Response format (example — valid IBAN)
 
 ```json
 {
@@ -94,12 +93,12 @@ console.log(data);
   "currency": "EUR",
   "bank_code": "37040044",
   "account_number": "0532013000",
-  "bic": null,
-  "bank_name": null
+  "bic": "COBADEFFXXX",
+  "bank_name": "Commerzbank"
 }
 ```
 
-## Response Format (Invalid IBAN)
+## Response format (example — invalid IBAN)
 
 ```json
 {
@@ -110,138 +109,121 @@ console.log(data);
 }
 ```
 
-> **Note on BIC & bank_name:** v1 does not ship a BIC/bank-name registry — both fields are always `null`. We never fabricate these values. A future v2 may add optional BIC resolution.
+## Supported countries
 
-## Batch Validation
+Full SEPA zone plus the international IBAN registry — 70+ countries including:
 
-Validate up to 100 IBANs in a single request (tier-dependent):
+Germany (DE), United Kingdom (GB), France (FR), Netherlands (NL), Belgium (BE), Luxembourg (LU), Austria (AT), Spain (ES), Portugal (PT), Italy (IT), Ireland (IE), Greece (GR), Finland (FI), Sweden (SE), Denmark (DK), Norway (NO), Iceland (IS), Switzerland (CH), Liechtenstein (LI), Poland (PL), Czech Republic (CZ), Slovakia (SK), Slovenia (SI), Hungary (HU), Croatia (HR), Romania (RO), Bulgaria (BG), Estonia (EE), Latvia (LV), Lithuania (LT), Malta (MT), Cyprus (CY), Turkey (TR), Israel (IL), Saudi Arabia (SA), United Arab Emirates (AE), Qatar (QA), Kuwait (KW), Bahrain (BH), Jordan (JO), Lebanon (LB), Egypt (EG), Tunisia (TN), Albania (AL), Andorra (AD), Bosnia and Herzegovina (BA), Gibraltar (GI), Kazakhstan (KZ), Kosovo (XK), Moldova (MD), Monaco (MC), Montenegro (ME), North Macedonia (MK), Pakistan (PK), San Marino (SM), Serbia (RS), Ukraine (UA), and more.
 
-```javascript
-await fetch('https://iban-validator-pro.p.rapidapi.com/api/v1/validate/batch', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'X-RapidAPI-Key': 'YOUR_RAPIDAPI_KEY',
-    'X-RapidAPI-Host': 'iban-validator-pro.p.rapidapi.com'
-  },
-  body: JSON.stringify({
-    ibans: ['DE89370400440532013000', 'GB82WEST12345698765432', 'INVALID_IBAN']
-  })
-});
-```
+## FAQ
 
-Response:
-```json
-{
-  "results": [ /* one result object per input, same order */ ],
-  "total": 3,
-  "valid_count": 2,
-  "invalid_count": 1
-}
-```
+**Is this API free?** Yes — the BASIC plan gives you a monthly quota at no cost. Paid tiers start at $9/month.
 
-## Supported Countries
+**Does validation actually check the bank exists, or just the math?** Both. The checksum step (MOD-97 per ISO 13616) verifies the IBAN itself; the enrichment step looks up the bank code against a registry and returns `bic` + `bank_name` when available. If the bank is not in the registry, those fields are `null` rather than guessed.
 
-All ~80 countries in the ISO 13616 IBAN registry — including all SEPA countries (EU + EEA + UK + CH + others), Middle East, North Africa, and Central Asia.
+**What's the difference between `valid: true` with `bic: null` and `valid: false`?** `valid: true` + `bic: null` means the IBAN is mathematically valid but the bank was not found in our registry — still safe to use. `valid: false` means the input failed checksum or format validation.
 
-## Error Codes
+**How big can a batch be?** Up to 100 IBANs on PRO+ plans, 10 on BASIC. Over-limit requests return `422 BATCH_LIMIT_EXCEEDED`.
 
-| Code | HTTP | Meaning |
-|---|---|---|
-| `MISSING_FIELD` | 400 | Request body is missing the `iban` field |
-| `BAD_REQUEST` | 400 | Malformed JSON or empty batch array |
-| `INVALID_FORMAT` | 200 | Input does not match IBAN structure (`valid: false`) |
-| `INVALID_CHECKSUM` | 200 | MOD-97 checksum failed (`valid: false`) |
-| `UNSUPPORTED_COUNTRY` | 200 | Country code not in IBAN registry (`valid: false`) |
-| `TOO_SHORT` / `TOO_LONG` | 200 | Length doesn't match country's expected length |
-| `BATCH_LIMIT_EXCEEDED` | 422 | Batch size exceeds your plan's tier limit |
-| `RATE_LIMITED` | 429 | Too many requests — respect `Retry-After` header |
+**Do you support non-IBAN account numbers (US routing numbers, Canadian transit + account)?** No — IBAN only. The US, Canada, Australia, and New Zealand don't use IBAN.
 
-## Rate Limits
+**Does this do real-time bank account verification (pennydrop / open banking)?** No. This API validates IBAN structure + enriches with bank metadata. It does not contact the bank or confirm the account is live.
 
-Soft per-minute limit: **120 requests/minute** per API key (sliding window). Monthly quota depends on your subscription tier.
+**Is this financial advice?** No. It is a data service. Users are responsible for their own risk decisions.
 
-## About the Validation
+**Can I cache results on my side?** Yes — IBAN validity is deterministic. Bank name / BIC can change (mergers, rebrands) so refresh those periodically.
 
-IBAN validation uses the ISO 13616 standard — the same MOD-97 checksum algorithm used by banks worldwide. No external API calls, no VIES-style downtime risk, no rate-limit cascades. Pure mathematics means reliable sub-50ms response times.
+## Keywords
+
+iban validator api, iban validation api, iban check, sepa iban, bic lookup, iban to bic, bank code lookup, iban parser, iso 13616, mod-97 checksum, iban enrichment, bulk iban validation, batch iban check, sepa direct debit, payment validation api, kyc iban, iban format check.
+
+## Disclaimer
+
+IBAN Validator Pro performs structural validation (ISO 13616 / MOD-97) and registry-based enrichment. A `valid: true` result confirms the IBAN's syntactic and checksum integrity and, where available, the bank registry entry — it does not confirm the account exists, is open, or belongs to any specific person or entity. No financial, legal, or KYC advice is given; see TERMS.md for full liability limits.
 ```
 
 ---
 
-## CODE EXAMPLE (JavaScript / Node.js)
+## Code examples
 
+**JavaScript**
 ```javascript
-// Single IBAN validation
-const response = await fetch('https://iban-validator-pro.p.rapidapi.com/api/v1/validate', {
+const res = await fetch('https://iban-validator-one.p.rapidapi.com/api/v1/validate', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
     'X-RapidAPI-Key': 'YOUR_RAPIDAPI_KEY',
-    'X-RapidAPI-Host': 'iban-validator-pro.p.rapidapi.com'
+    'X-RapidAPI-Host': 'iban-validator-one.p.rapidapi.com'
   },
   body: JSON.stringify({ iban: 'DE89 3704 0044 0532 0130 00' })
 });
-
-const data = await response.json();
-
-if (data.valid) {
-  console.log(`Valid ${data.country_name} IBAN`);
-  console.log(`Bank code: ${data.bank_code}`);
-  console.log(`Account:   ${data.account_number}`);
-  console.log(`Currency:  ${data.currency}`);
-} else {
-  console.log(`Invalid: ${data.error} (${data.error_code})`);
-}
+const data = await res.json();
+console.log(data.valid, data.bic, data.bank_name);
 ```
 
-## CODE EXAMPLE (Python)
-
+**Python**
 ```python
 import requests
-
-response = requests.post(
-    'https://iban-validator-pro.p.rapidapi.com/api/v1/validate',
+res = requests.post(
+    'https://iban-validator-one.p.rapidapi.com/api/v1/validate',
+    json={'iban': 'DE89 3704 0044 0532 0130 00'},
     headers={
-        'Content-Type': 'application/json',
         'X-RapidAPI-Key': 'YOUR_RAPIDAPI_KEY',
-        'X-RapidAPI-Host': 'iban-validator-pro.p.rapidapi.com',
+        'X-RapidAPI-Host': 'iban-validator-one.p.rapidapi.com',
     },
-    json={'iban': 'DE89 3704 0044 0532 0130 00'}
 )
-
-data = response.json()
-print(data)
+data = res.json()
+print(data['valid'], data.get('bic'), data.get('bank_name'))
 ```
 
-## CODE EXAMPLE (curl)
-
+**cURL**
 ```bash
-curl -X POST https://iban-validator-pro.p.rapidapi.com/api/v1/validate \
+curl -X POST "https://iban-validator-one.p.rapidapi.com/api/v1/validate" \
   -H "Content-Type: application/json" \
   -H "X-RapidAPI-Key: YOUR_RAPIDAPI_KEY" \
-  -H "X-RapidAPI-Host: iban-validator-pro.p.rapidapi.com" \
-  -d '{"iban": "DE89 3704 0044 0532 0130 00"}'
+  -H "X-RapidAPI-Host: iban-validator-one.p.rapidapi.com" \
+  -d '{"iban":"DE89370400440532013000"}'
 ```
 
 ---
 
-## PRICING TIERS (to enter in RapidAPI Studio → Plans)
+## Pricing (Studio → Plans)
 
-| Tier | Price | Quota | Hard cap? | Batch limit |
+| Tier | Price | Quota | Batch size | Hard cap |
 |---|---|---|---|---|
-| **BASIC (Free)** | $0/mo | 100 req/mo | Yes | no batch |
-| **PRO** | $9/mo | 1,000 req/mo | soft, overage $5 / 1k | 10 per batch |
-| **ULTRA** | $29/mo | 10,000 req/mo | soft, overage $5 / 1k | 100 per batch |
-| **MEGA** | $99/mo | 100,000 req/mo | soft, overage $3 / 1k | 100 per batch |
+| **BASIC (Free)** | $0/mo | 500 req/mo | 10 | Yes |
+| **PRO** | $9/mo | 10,000 req/mo | 100 | Soft — overage $2 / 1k |
+| **ULTRA** | $29/mo | 100,000 req/mo | 100 | Soft — overage $1 / 1k |
+| **MEGA** | $99/mo | 1,000,000 req/mo | 100 | Soft — overage $0.50 / 1k |
 
-**Rate limit on all tiers:** 120 req/min (sliding window)
-
-> RapidAPI tier names (`BASIC`, `PRO`, `ULTRA`, `MEGA`) are sent via the `x-rapidapi-subscription` header and mapped internally to our batch-limit logic (`FREE → 0`, `BASIC → 10`, `PRO → 100`, `ULTRA/MEGA → BUSINESS → 100`).
+All plans: 120 req/min sliding-window rate limit.
 
 ---
 
-## SEO KEYWORDS (for RapidAPI search ranking)
+## Studio Tests (free plan = 2 tests max — default to 1)
 
-Primary: `iban validation`, `iban checker`, `bank account validation`
-Secondary: `iban validator`, `iban api`, `sepa validation`, `bank account verification`
-Long-tail: `validate iban api`, `iban checksum validator`, `batch iban validation`, `iso 13616 validator`
+### Test 1 — Health check (MANDATORY)
+
+- **Location:** Frankfurt
+- **Schedule:** every 15 min
+- **Step 1 — HTTP GET**
+  - URL: `https://iban-validator-one.vercel.app/api/health`
+  - No headers needed (`/api/health` is unguarded)
+  - Variable name: `health`
+- **Step 2 — Assert Equals**
+  - Expression: `health.data.status` *(no `{{ }}` braces, use Studio's variable picker)*
+  - Value: `ok`
+
+### Test 2 — optional (only if adding a second test)
+
+Prefer a deterministic **format-rejection** test (POST `/validate` with `{"iban":"INVALID"}` → assert `fmt.data.error_code == INVALID_FORMAT`) over a live valid-IBAN happy-path — no upstream dependency, so the assertion is stable.
+
+---
+
+## Pre-Go-Live checklist
+
+1. ✅ Base URL set to `https://iban-validator-one.vercel.app/api/v1`
+2. ✅ Secret Header `X-RapidAPI-Proxy-Secret` configured
+3. ✅ Privacy + Terms URLs pasted
+4. ✅ Health test green
+5. ✅ Playground smoketest: subscribe to own API, call `/validate` via Try-It with a real Consumer key → expect 200 (verifies Gateway → Secret Injection → Origin chain)
